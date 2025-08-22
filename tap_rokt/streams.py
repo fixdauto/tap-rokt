@@ -30,6 +30,8 @@ class CampaignsBreakdownStream(Stream):
         th.Property("date", th.StringType),
         th.Property("impressions", th.NumberType),
         th.Property("referrals", th.NumberType),
+        th.Property("gross_cost", th.NumberType),
+        th.Property("net_cost", th.NumberType),
         th.Property("click_thru_acquisitions", th.NumberType),
         th.Property("click_thru_acquisitions_by_conversion_time", th.NumberType),
         th.Property("view_thru_acquisitions_by_conversion_time", th.NumberType),
