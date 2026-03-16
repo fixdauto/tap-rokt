@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 
 class RoktClient:
     """
-    OAuth2 client_credentials for Rokt Reporting API
+    OAuth2 client_credentials for Rokt Query API
     """
 
     def __init__(self, client_id: str, client_secret: str, token_url: str, api_base: str):
@@ -52,9 +52,7 @@ class RoktClient:
         
         url = f"{self.api_base}{path}"
         self.logger.info(f"Making POST request to: {url}")
-        self.logger.debug(f"Headers: {headers}")
-        
+
         resp = self.session.post(url, headers=headers, json=body)
-        self.logger.info(f"Response: {resp.json()}")
         resp.raise_for_status()
         return resp.json()

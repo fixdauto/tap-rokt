@@ -27,6 +27,7 @@ class CampaignsBreakdownStream(Stream):
     schema = th.PropertiesList(
         th.Property("campaign_id", th.StringType),
         th.Property("campaign_name", th.StringType),
+        th.Property("datetime", th.StringType),
         th.Property("date", th.StringType),
         th.Property("impressions", th.NumberType),
         th.Property("referrals", th.NumberType),
@@ -68,9 +69,9 @@ class CampaignsBreakdownStream(Stream):
         self.account_id = cfg["account_id"]
 
         now = datetime.utcnow()
-        default_end = now.strftime("%Y-%m-%d") + "T23:59:59.000"
-        default_start = (now - timedelta(days=cfg.get("days_back", 14))).strftime("%Y-%m-%d")
-        default_start = default_start + "T00:00:00.000"
+        days_back = cfg.get("days_back", 14)
+        default_start = (now - timedelta(days=days_back)).strftime("%Y-%m-%d")
+        default_end = (now + timedelta(days=1)).strftime("%Y-%m-%d")
 
         self.start_date = cfg.get("start_date") or default_start
         self.end_date = cfg.get("end_date") or default_end
@@ -82,53 +83,55 @@ class CampaignsBreakdownStream(Stream):
         return response if isinstance(response, list) else []
 
     def get_records(self, context: dict | None) -> t.Iterable[dict]:
-        """Fetch campaign breakdown data one day at a time, inclusive."""
+        """Fetch campaign breakdown data from the Query API."""
         path = self.path.format(account_id=self.account_id)
-        start_date_obj = self.start_date
-        end_date_obj = self.end_date
 
         body = {
-                "interval": "day",
-                "startDate": start_date_obj,
-                "endDate": end_date_obj,
-                "dimensionFilters": {},
-                "metrics": [
-                    "impressions",
-                    "referrals",
-                    "gross_cost",
-                    "net_cost",
-                    "click_thru_acquisitions",
-                    "click_thru_acquisitions_by_conversion_time",
-                    "view_thru_acquisitions_by_conversion_time",
-                    "acquisitions_by_conversion_time",
-                    "click_thru_conversions",
-                    "click_thru_conversions_by_conversion_time",
-                    "view_thru_conversions_by_conversion_time",
-                    "view_thru_acquisitions",
-                    "view_thru_conversions",
-                    "acquisitions",
-                    "conversions",
-                    "conversions_by_conversion_time",
-                    "unique_creatives",
-                    "unique_campaigns",
-                    "unique_audiences",
-                    "unique_campaign_countries",
-                    "click_thru_conversion_value",
-                    "acquisitions_value",
-                    "conversion_value",
-                    "view_thru_acquisitions_value",
-                    "view_thru_conversion_value",
-                    "click_thru_acquisition_value"
-                ],
-                "dimensions": ["campaign_id", "campaign_name"],
-                "orderBys": [
-                    {
+            "timezoneVariation": self.time_zone_variation,
+            "currencyCode": self.currency,
+            "interval": "day",
+            "startDate": self.start_date,
+            "endDate": self.end_date,
+            "dimensionFilters": {},
+            "metrics": [
+                "impressions",
+                "referrals",
+                "gross_cost",
+                "net_cost",
+                "click_thru_acquisitions",
+                "click_thru_acquisitions_by_conversion_time",
+                "view_thru_acquisitions_by_conversion_time",
+                "acquisitions_by_conversion_time",
+                "click_thru_conversions",
+                "click_thru_conversions_by_conversion_time",
+                "view_thru_conversions_by_conversion_time",
+                "view_thru_acquisitions",
+                "view_thru_conversions",
+                "acquisitions",
+                "conversions",
+                "conversions_by_conversion_time",
+                "unique_creatives",
+                "unique_campaigns",
+                "unique_audiences",
+                "unique_campaign_countries",
+                "click_thru_conversion_value",
+                "acquisitions_value",
+                "conversion_value",
+                "view_thru_acquisitions_value",
+                "view_thru_conversion_value",
+                "click_thru_acquisition_value",
+            ],
+            "dimensions": ["campaign_id", "campaign_name"],
+            "orderBys": [
+                {
                     "column": "referrals",
-                    "direction": "desc"
-                    }
-                ]
+                    "direction": "desc",
+                }
+            ],
         }
-        self.logger.info(f"Fetching data for {start_date_obj} to {end_date_obj}")
+        self.logger.info(
+            f"Fetching data for {self.start_date} to {self.end_date}"
+        )
         response = self.client.post(path, body=body)
         records = response["data"]
         for record in records:
