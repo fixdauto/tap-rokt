@@ -137,7 +137,9 @@ class CampaignsBreakdownStream(Stream):
         for record in records:
             if record == []:
                 continue
-            if record["campaign_id"] is None:
+            if record["campaign_id"] is None or record["campaign_id"] == "0":
+                continue
+            if record["campaign_name"] is None:
                 continue
             record["date"] = record["datetime"].split("T")[0]
             yield record
